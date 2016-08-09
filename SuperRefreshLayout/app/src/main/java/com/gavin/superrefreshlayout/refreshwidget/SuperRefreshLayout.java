@@ -15,6 +15,7 @@ import android.support.v4.view.NestedScrollingChildHelper;
 import android.support.v4.view.NestedScrollingParent;
 import android.support.v4.view.NestedScrollingParentHelper;
 import android.support.v4.view.ViewCompat;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -31,9 +32,12 @@ import android.view.animation.DecelerateInterpolator;
 import android.view.animation.Transformation;
 import android.widget.AbsListView;
 import android.widget.BaseAdapter;
+import android.widget.GridView;
+import android.widget.HeaderViewListAdapter;
 import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.RelativeLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -246,7 +250,9 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             if(mTarget instanceof  ListView){
                 ((ListView)mTarget).removeFooterView(mFooterView);
             }
-            this.addView(mFooterView);
+            if(mFooterView.getParent() == null){
+                this.addView(mFooterView);
+            }
         }
     }
 
@@ -290,6 +296,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
      * 含有动画的刷新
      */
     public void refreshNormalWithAnimation(){
+        mRefreshCurrentHeight =0;
         Animation animation = new Animation() {
             @Override
             protected void applyTransformation(float interpolatedTime, Transformation t) {
@@ -299,7 +306,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                     setTargetViewOffsetTopOrBottom((int) offset);
                     setHeaderOffsetTopAndBottom((int) offset);
                 }else {
-                    moveSpinner(mRefreshCurrentHeight += mTotalDragDistance * interpolatedTime);
+                    moveSpinner(mRefreshCurrentHeight += mTotalDragDistance * interpolatedTime * 1.4f);
                 }
             }
         };
@@ -314,8 +321,10 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             public void onAnimationEnd(Animation animation) {
                 if(mIsShowHeaderView){
                     mHeaderView.update(1, UpdateRefreshStatus.STATUS_HEADER_REFRESHING);
+                    refreshInBackground();
+                }else {
+                    finishSpinner(mRefreshCurrentHeight);
                 }
-                refreshInBackground();
                 mTarget.clearAnimation();
             }
 
@@ -354,6 +363,10 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                 }else {
                     mHeaderContainer.setLayoutParams(new AbsListView.LayoutParams(LayoutParams.MATCH_PARENT, mHeaderContainer.getLayoutParams().height));
                 }
+//                if(((ListView)mTarget).getAdapter() instanceof HeaderViewListAdapter){//在调用addHeaderView()之后调用了setAdapter(),内部会创建一个新的
+//                                                                                      //HeaderViewListAdapter替换原来adapter
+//                    ((ListView)mTarget).addHeaderView(mHeaderContainer);
+//                }
                 ((ListView)mTarget).addHeaderView(mHeaderContainer);
             }
         }
@@ -1137,6 +1150,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             // Fail fast if we're not in a state where a swipe is possible
             return false;
         }
+
         //通过上面的判断,在move事件上,就不会再传递给  子view(target)
         switch (action) {
             case MotionEvent.ACTION_DOWN:
@@ -1154,6 +1168,10 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                     return false;
                 }
                 mLastY = mInitialDownY = initialDownY;
+                if(!(mTarget instanceof NestedScrollingChild) && !(mTarget instanceof ListView) && !(mTarget instanceof GridView)
+                        && !(mTarget instanceof ScrollView)){
+                    return true;
+                }
                 break;
 
             case MotionEvent.ACTION_MOVE:
@@ -1171,7 +1189,8 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
 
                 if (Math.abs(yDiff) > mTouchSlop && !mIsBeingDragged) {//将事件截断掉,以后的move事件都被截断掉
                     if(yDiff > 0 && !canChildScrollUp()) { // 下拉
-                        mLastY = mInitialMotionY = mInitialDownY + mTouchSlop;
+                        mInitialMotionY = mInitialDownY + mTouchSlop;
+                        mLastY = y;
                         mIsBeingDragged = true;
                         mProgress.setAlpha(STARTING_PROGRESS_ALPHA);
                     }else if(yDiff < 0 && !canChildScrollDown()){
@@ -1656,7 +1675,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             mReturningToStart = false;
         }
 
-        if (!isEnabled() || mReturningToStart || canChildScrollUp() && canChildScrollDown() || mNestedScrollInProgress) {
+        if (!isEnabled() || mReturningToStart ||mRefreshing || mIsLoading || canChildScrollUp() && canChildScrollDown() || mNestedScrollInProgress) {
             // Fail fast if we're not in a state where a swipe is possible
             return false;
         }
@@ -1665,6 +1684,11 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             case MotionEvent.ACTION_DOWN:
                 mActivePointerId = MotionEventCompat.getPointerId(ev, 0);//第一个手指的id
                 mIsBeingDragged = false;
+                if(!(mTarget instanceof NestedScrollingChild) && !(mTarget instanceof ListView) && !(mTarget instanceof GridView)
+                        && !(mTarget instanceof ScrollView)){
+                    mIsBeingDragged = true;
+                    mLastY = mInitialMotionY = MotionEventCompat.getY(ev,mActivePointerId);
+                }
                 break;
 
             case MotionEvent.ACTION_MOVE: {
@@ -2723,7 +2747,6 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
 //                        View child = ((ListView) mTarget).getChildAt(((ListView) mTarget).getChildCount() - 1);
 //                        if(child != null && mTarget.getHeight() >= child.getBottom()){}
 
-                        Log.d("mytest", "list scroll to end");
                         if(mIsAddTailerToList && mIsLoadmoreEnable && !mIsLoadCompleted){
                             //执行加在更多的操作
                             setLoadingMore(true,true);

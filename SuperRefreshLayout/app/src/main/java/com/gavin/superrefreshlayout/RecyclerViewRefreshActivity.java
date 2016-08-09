@@ -54,6 +54,9 @@ public class RecyclerViewRefreshActivity extends AppCompatActivity {
         mRefreshLayout.setEmptyView(emptyView,mAdapter);
         mRefreshList.setAdapter(mAdapter);
 
+        /**
+         * SwipeRefreshLayout默认刷新的配置
+         */
         mRefreshLayout.setProgressViewEndTarget(false, 100);
         mRefreshLayout.setDistanceToTriggerSync(100);
         mRefreshLayout.setColorSchemeColors(Color.YELLOW, Color.RED, Color.BLUE, Color.GREEN);

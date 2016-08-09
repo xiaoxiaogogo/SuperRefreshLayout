@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.gavin.superrefreshlayout.refreshwidget.SuperRefreshLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/container"
+    >
+    <ScrollView
+        android:id="@+id/refresh_list"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#99ff0000"
+            android:textSize="50sp"
+            android:text="A\nB\nC\nD\ng\nK\nL\nO\nL\nY\nT\nR\nP\nR\nA\nB\nC\nD\ng\nK\nL\nO"
+            />
+
+    </ScrollView>
+
+</com.gavin.superrefreshlayout.refreshwidget.SuperRefreshLayout>

@@ -27,16 +27,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 startActivity(new Intent(this, RecyclerViewRefreshActivity.class));
                 break;
             case R.id.list_view_refresh:
-
+                startActivity(new Intent(this, ListViewRefreshActivity.class));
                 break;
             case R.id.nested_scroll_view_refresh:
-
+                startActivity(new Intent(this, NestedScrollRefreshActivity.class));
                 break;
             case R.id.scroll_view_refresh:
-
+                startActivity(new Intent(this, ScrollViewRefreshActivity.class));
                 break;
             case R.id.normal_view_refresh:
-
+                startActivity(new Intent(this, NormalViewRefreshActivity.class));
                 break;
         }
     }
