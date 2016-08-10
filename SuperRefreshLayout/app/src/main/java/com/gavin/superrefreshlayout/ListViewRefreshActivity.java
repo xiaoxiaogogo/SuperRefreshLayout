@@ -47,16 +47,25 @@ public class ListViewRefreshActivity extends AppCompatActivity {
         tv.setBackgroundColor(0x993300ff);
         tv.setGravity(Gravity.CENTER);
         tv.setText("Top Contianer");
-        mRefreshContainer.addHeaderTopView(tv);
+        mRefreshContainer.addHeaderTopView(tv);//可以直接调用ListView的 addHeaderView()(内部就是这样实现的)
+        TextView tv2 = new TextView(this);
+        tv2.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (100 * getResources().getDisplayMetrics().density)));
+        tv2.setTextSize(TypedValue.COMPLEX_UNIT_SP, 40);
+        tv2.setTextColor(Color.YELLOW);
+        tv2.setBackgroundColor(0x993388ff);
+        tv2.setGravity(Gravity.CENTER);
+        tv2.setText("Top Contianer2");
+        mRefreshContainer.addHeaderTopView(tv2);
 
 
         mRefreshList.setAdapter(mAdapter);
+
 
         mRefreshContainer.setColorSchemeColors(Color.GREEN, Color.RED, Color.YELLOW, Color.BLUE);//设置加载图标的颜色变化
         mRefreshContainer.setSize(SuperRefreshLayout.LARGE);//设置刷新图标的大小
         mRefreshContainer.setProgressBackgroundColorSchemeColor(Color.GRAY);
         mRefreshContainer.setDistanceToTriggerSync(100);//达到刷新的高度
-        mRefreshContainer.setProgressViewEndTarget(false, 100);//设置正在刷新的高度(如果没有设置setProgressViewOffset(),那么位置这个方法设置的值,还需要减去初始顶部offset
+        mRefreshContainer.setProgressViewEndTarget(false, 150);//设置正在刷新的高度(如果没有设置setProgressViewOffset(),那么位置这个方法设置的值,还需要减去初始顶部offset
 
 
         mRefreshContainer.setOnRefreshListener(new SuperRefreshLayout.OnRefreshListener() {

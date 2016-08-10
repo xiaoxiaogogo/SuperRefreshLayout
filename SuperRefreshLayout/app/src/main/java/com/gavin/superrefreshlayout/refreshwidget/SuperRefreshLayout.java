@@ -188,7 +188,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
      */
     private boolean mIsNeedReLayout = false;
 
-    private View mHeaderContainer;
+    private List<View> mHeaderContainerList;
 
 
     /**
@@ -217,8 +217,8 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
         return mIsLoadCompleted;
     }
 
-    public View getHeaderContainerView(){
-        return mHeaderContainer;
+    public List<View> getHeaderContainerList(){
+        return mHeaderContainerList;
     }
 
 
@@ -353,21 +353,19 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             if(view.getParent() != null){
                 throw new IllegalStateException("the header top view can't have a parent before add");
             }
-            mHeaderContainer = view;
-            if(mHeaderContainer.getLayoutParams() == null){
-                mHeaderContainer.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
-            }
+            View headerContianer = view;
             if(mTarget instanceof ListView){
-                if(mHeaderContainer.getLayoutParams() == null) {
-                    mHeaderContainer.setLayoutParams(new AbsListView.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+                if(headerContianer.getLayoutParams() == null) {
+                    headerContianer.setLayoutParams(new AbsListView.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
                 }else {
-                    mHeaderContainer.setLayoutParams(new AbsListView.LayoutParams(LayoutParams.MATCH_PARENT, mHeaderContainer.getLayoutParams().height));
+                    headerContianer.setLayoutParams(new AbsListView.LayoutParams(LayoutParams.MATCH_PARENT, headerContianer.getLayoutParams().height));
                 }
-//                if(((ListView)mTarget).getAdapter() instanceof HeaderViewListAdapter){//在调用addHeaderView()之后调用了setAdapter(),内部会创建一个新的
-//                                                                                      //HeaderViewListAdapter替换原来adapter
-//                    ((ListView)mTarget).addHeaderView(mHeaderContainer);
-//                }
-                ((ListView)mTarget).addHeaderView(mHeaderContainer);
+                ((ListView)mTarget).addHeaderView(headerContianer);
+            }else{
+                if(headerContianer.getLayoutParams() == null){
+                    headerContianer.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+                }
+                mHeaderContainerList.add(headerContianer);
             }
         }
     }
@@ -570,6 +568,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
         //add by me (增加自定义的Header)
         createHeaderView();
 
+        mHeaderContainerList = new ArrayList<>();
     }
 
     private void createHeaderView() {
@@ -2331,7 +2330,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
 
 
 
-    /**************************增加FooterAdapter********************************************/
+    /*******************************RecyclerView的扩展处理(扩展Adapter,ItemDecoration等)********************************************/
 
     public static abstract class RecyclerRefreshAdapter<T> extends RecyclerView.Adapter<RecyclerView.ViewHolder>{
         public static final int FOOTER_CONTENT_VIEW_TYPE = -0x1111;
@@ -2391,8 +2390,11 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                 SwipeRefreshFooter footer = mRefreshLayout.getFooterView();
                 footer.update(1, UpdateRefreshStatus.STATUS_FOOTER_LOADING);
                 return new FooterViewHolder(footer);
-            }else if(viewType == HEADER_CONTAINER_VIEW_TYPE){
-                return new HeaderContainerViewHolder(mRefreshLayout.getHeaderContainerView());
+            }else if(mRefreshLayout.getHeaderContainerList() != null && viewType <= HEADER_CONTAINER_VIEW_TYPE &&
+                    mRefreshLayout.getHeaderContainerList().size() > (HEADER_CONTAINER_VIEW_TYPE - viewType)){
+                if(mRefreshLayout.getHeaderContainerList().get(HEADER_CONTAINER_VIEW_TYPE - viewType) != null) {
+                    return new HeaderContainerViewHolder(mRefreshLayout.getHeaderContainerList().get(HEADER_CONTAINER_VIEW_TYPE - viewType));
+                }
             }
             return getViewHolder(parent, viewType);
         }
@@ -2403,8 +2405,8 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                 return;
             }
 
-            if(mRefreshLayout.getHeaderContainerView() != null){
-                position--;
+            if(mRefreshLayout.getHeaderContainerList() != null){
+                position -= mRefreshLayout.getHeaderContainerList().size();
             }
             if(position < 0){
                 return;
@@ -2419,8 +2421,8 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             if(itemCount > 0 && mIsAddTailerToList == true && mIsLoadmoreEnable && !mRefreshLayout.isLoadCompleted()){
                 itemCount++;
             }
-            if(mRefreshLayout.getHeaderContainerView() != null){
-                itemCount++;
+            if(mRefreshLayout.getHeaderContainerList() != null){
+                itemCount += mRefreshLayout.getHeaderContainerList().size();
             }
             return itemCount;
         }
@@ -2439,8 +2441,8 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
 
         @Override
         public int getItemViewType(int position) {
-            if(position == 0 && mRefreshLayout.getHeaderContainerView() != null){
-                return HEADER_CONTAINER_VIEW_TYPE;
+            if(mRefreshLayout.getHeaderContainerList() != null && position < mRefreshLayout.getHeaderContainerList().size()){
+                return HEADER_CONTAINER_VIEW_TYPE - position;
             }else if(position == getItemCount() -1 && (mIsAddTailerToList == true && mIsLoadmoreEnable && !mRefreshLayout.isLoadCompleted())){
                 return FOOTER_CONTENT_VIEW_TYPE;
             }
@@ -2464,7 +2466,8 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                      */
                     @Override
                     public int getSpanSize(int position) {
-                        if(getItemViewType(position) == HEADER_CONTAINER_VIEW_TYPE || getItemViewType(position) == FOOTER_CONTENT_VIEW_TYPE){
+                        if(getItemViewType(position) <= HEADER_CONTAINER_VIEW_TYPE && mRefreshLayout.getHeaderContainerList().size() > (HEADER_CONTAINER_VIEW_TYPE - getItemViewType(position))
+                                || getItemViewType(position) == FOOTER_CONTENT_VIEW_TYPE){
                             return layoutManager.getSpanCount();
                         }
                         return 1;
@@ -2473,14 +2476,20 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             }
         }
 
-
+        /**
+         * 处理 StaggeredGridLayoutManager 的 HeaderContainer 和Footer占据一行的问题
+         * @param holder
+         */
         @Override
         public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
             super.onViewAttachedToWindow(holder);
             LayoutParams layoutParams = holder.itemView.getLayoutParams();
-            if(layoutParams != null && layoutParams instanceof StaggeredGridLayoutManager.LayoutParams &&
-                    (getItemViewType(holder.getLayoutPosition()) == HEADER_CONTAINER_VIEW_TYPE || getItemViewType(holder.getLayoutPosition()) == FOOTER_CONTENT_VIEW_TYPE)){
-                ((StaggeredGridLayoutManager.LayoutParams) layoutParams).setFullSpan(true);
+            if(layoutParams != null && layoutParams instanceof StaggeredGridLayoutManager.LayoutParams){
+                int viewType = getItemViewType(holder.getLayoutPosition());
+                if(viewType <= HEADER_CONTAINER_VIEW_TYPE && mRefreshLayout.getHeaderContainerList().size() > (HEADER_CONTAINER_VIEW_TYPE - viewType)
+                        || viewType == FOOTER_CONTENT_VIEW_TYPE) {
+                    ((StaggeredGridLayoutManager.LayoutParams) layoutParams).setFullSpan(true);
+                }
             }
         }
 
@@ -2561,7 +2570,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
             int childCount = parent.getChildCount();
             for (int i=0;i < childCount; i++){
                 View child = parent.getChildAt(i);
-                if(child == mRefreshLayout.getHeaderContainerView()){
+                if(mRefreshLayout.getHeaderContainerList().contains(child)){
                     continue;
                 }
                 onDrawChild(child, c, parent, state);
@@ -2590,7 +2599,7 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
         public final void getItemOffsets(Rect outRect, View child, RecyclerView parent, RecyclerView.State state) {
             RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child.getLayoutParams();
             int position = params.getViewAdapterPosition();
-            if(mRefreshLayout.getHeaderContainerView() != null && position == 0){
+            if(mRefreshLayout.getHeaderContainerList() != null && position < mRefreshLayout.getHeaderContainerList().size()){
                 outRect.set(0,0,0,0);
                 return;
             }
@@ -2598,8 +2607,8 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                 outRect.set(0,0,0,0);
                 return;
             }
-            if(mRefreshLayout.getHeaderContainerView() !=null){
-                position--;
+            if(mRefreshLayout.getHeaderContainerList() !=null){
+                position -= mRefreshLayout.getHeaderContainerList().size();
             }
             getItemOffsetsInRealPosition(position, outRect, child, parent, state);
 
@@ -2730,10 +2739,6 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                 ((ListView)mTarget).addFooterView(footerView);
             }
 
-            if(mHeaderContainer != null){
-                ((ListView)mTarget).addHeaderView(mHeaderContainer);
-            }
-
             ((ListView) mTarget).setOnScrollListener(new AbsListView.OnScrollListener() {
                 @Override
                 public void onScrollStateChanged(AbsListView view, int scrollState) {
@@ -2755,6 +2760,9 @@ public class SuperRefreshLayout extends ViewGroup implements NestedScrollingPare
                     }
                 }
             });
+
+            //去掉ListView 的默认分割线
+            ((ListView)mTarget).setDividerHeight(0);
         }
 
     }

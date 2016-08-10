@@ -7,14 +7,18 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.StaggeredGridLayoutManager;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.gavin.superrefreshlayout.decoration.MyItemDecoration;
 import com.gavin.superrefreshlayout.refreshwidget.SuperRefreshLayout;
 
 import java.util.ArrayList;
@@ -43,7 +47,7 @@ public class RecyclerViewRefreshActivity extends AppCompatActivity {
          * 完美支持所有的layoutManager(但是支持方向值有 Vertival)
          */
 //        mRefreshList.setLayoutManager(new StaggeredGridLayoutManager(2, StaggeredGridLayoutManager.VERTICAL));
-        mRefreshList.setLayoutManager(new LinearLayoutManager(this));
+        mRefreshList.setLayoutManager(new GridLayoutManager(this , 2));
         mAdapter = new MyAdapter(this, mRefreshLayout);
         TextView emptyView = new TextView(this);
         emptyView.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -53,6 +57,8 @@ public class RecyclerViewRefreshActivity extends AppCompatActivity {
 
         mRefreshLayout.setEmptyView(emptyView,mAdapter);
         mRefreshList.setAdapter(mAdapter);
+
+        mRefreshList.addItemDecoration(new MyItemDecoration(mRefreshLayout, this));
 
         /**
          * SwipeRefreshLayout默认刷新的配置
@@ -129,6 +135,15 @@ public class RecyclerViewRefreshActivity extends AppCompatActivity {
         tv.setGravity(Gravity.CENTER);
         tv.setText("Top Contianer");
         mRefreshLayout.addHeaderTopView(tv);
+
+        TextView tv2 = new TextView(this);
+        tv2.setLayoutParams(new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (int) (100 * getResources().getDisplayMetrics().density)));
+        tv2.setTextSize(TypedValue.COMPLEX_UNIT_SP, 40);
+        tv2.setTextColor(Color.YELLOW);
+        tv2.setBackgroundColor(0x993388ff);
+        tv2.setGravity(Gravity.CENTER);
+        tv2.setText("Top Contianer2");
+        mRefreshLayout.addHeaderTopView(tv2);
 
         /**
          * 默认带有动画效果的刷新方式
