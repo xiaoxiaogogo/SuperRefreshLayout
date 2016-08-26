@@ -1,0 +1,94 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+
+//定义GroupID和Version，ArtefactID会自动使用Project名
+group = 'com.github.xiaoxiaogogo'
+version = '1.0.1'
+
+repositories {
+    mavenCentral();
+}
+
+//artifacts {
+//    archives file('SuperRefreshLayout.aar')
+//}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+
+
+            //指定项目部署到的中央库地址，UserName和Password就是Part 1中注册的账号。
+            repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                authentication(userName: 'qiaoba', password: 'wangfei123')
+            }
+            snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                authentication(userName: 'qiaoba', password: 'wangfei123')
+            }
+
+            //添加多个artifact的方式
+//            addFilter('api') {artifact, file ->
+//                artifact.name == 'api'
+//            }
+//            addFilter('service') {artifact, file ->
+//                artifact.name == 'service'
+//            }
+//            pom('api').version = 'mySpecialMavenVersion'
+
+            //构造项目的Pom文件，参见Part 2中Pom文件的规范，不要遗漏必填项
+            pom.project {
+                name project.name
+                packaging 'aar'
+                description '一款功能强大的刷新控件'
+                url 'https://github.com/xiaoxiaogogo/SuperRefreshLayout'
+
+//                scm {
+//                    url 'scm:git@github.com:wangjiegulu/AndroidBucket.git'
+//                    connection 'scm:git@github.com:wangjiegulu/AndroidBucket.git'
+//                    developerConnection 'git@github.com:wangjiegulu/AndroidBucket.git'
+//                }
+
+//                licenses {
+//                    license {
+//                        name 'The Apache Software License, Version 2.0'
+//                        url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+//                        distribution 'wangjie'
+//                    }
+//                }
+
+                developers {
+                    developer {
+                        id 'qiaobagogo'
+                        name 'qiaoba'
+                        email '1191694368@qq.com'
+                    }
+                }
+            }
+        }
+    }
+}
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.3"
+
+    defaultConfig {
+        minSdkVersion 17
+        targetSdkVersion 23
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.0.0'
+    compile 'com.android.support:recyclerview-v7:23.2.1'
+}
