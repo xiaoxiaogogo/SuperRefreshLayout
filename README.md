@@ -12,6 +12,6 @@ This is a  layout for pull-to-refresh and pull-down-to-loadmore.It support Recyc
   8.支持自己配置是否支持refresh和loadmore操作</br>
 预览图片如下：
 ![image](https://github.com/xiaoxiaogogo/SuperRefreshLayout/tree/master/SuperRefreshLayout/githubimg/refresh_img.gif)
-如果图片显示不出来，点击下面链接预览：</br>
+</br>如果图片显示不出来，点击下面链接预览：</br>
 [预览图片地址](https://github.com/xiaoxiaogogo/SuperRefreshLayout/tree/master/SuperRefreshLayout/githubimg/refresh_img.gif)
 
